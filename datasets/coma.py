@@ -10,6 +10,8 @@ from tqdm import tqdm
 
 
 class CoMA(InMemoryDataset):
+    url = 'https://coma.is.tue.mpg.de/'
+
     categories = [
         'bareteeth',
         'cheeks_in',
@@ -32,7 +34,6 @@ class CoMA(InMemoryDataset):
                  test_exp='bareteeth',
                  transform=None,
                  pre_transform=None):
-        self.rootpath=root
         self.split = split
         self.test_exp = test_exp
         if not osp.exists(osp.join(root, 'processed', self.split)):
@@ -47,14 +48,13 @@ class CoMA(InMemoryDataset):
                 os.makedirs(
                     osp.join(root, 'processed', self.split, self.test_exp))
         super().__init__(root, transform, pre_transform)
-        # print(self.processed_paths)
         path = self.processed_paths[0] if train else self.processed_paths[1]
         self.data, self.slices = torch.load(path)
 
     @property
     def raw_file_names(self):
         return osp.join(self.root,)
-    #
+
     @property
     def processed_file_names(self):
         if self.split == 'extrapolation':
@@ -71,28 +71,20 @@ class CoMA(InMemoryDataset):
             raise RuntimeError(
                 ('Expected the split of interpolation or extrapolation, but'
                  ' found {}').format(self.split))
-    def savepath(self,filepath,trainSave=False):
-        if not trainSave:
-            if self.split=='interpolation':
-                logname=f"test-{self.split}.txt"
-            elif self.split=='extrapolation':
-                logname = f"test-{self.split}-{self.test_exp}.txt"
-        path=osp.join(self.rootpath,logname)
-        with open(path,'a') as logfile:
-            logfile.write('{:s}\n'.format(filepath))
 
-
+    def download(self):
+        raise RuntimeError(
+            'Dataset not found. Please download COMA_data.zip from {} and '
+            'move it to {}'.format(self.url, self.raw_dir))
 
     def process(self):
         print('Processing...')
-        print(self.raw_paths[0],self.raw_dir)
-        fps=glob(osp.join(self.raw_dir, '*/*/*/*.ply'))
+        fps = glob(osp.join(self.raw_dir, '*/*/*.ply'))
         if len(fps) == 0:
             extract_zip(self.raw_paths[0], self.raw_dir, log=False)
-            fps = glob(osp.join(self.raw_dir, '*/*/*/*.ply'))
+            fps = glob(osp.join(self.raw_dir, '*/*/*.ply'))
 
         train_data_list, test_data_list = [], []
-
         for idx, fp in enumerate(tqdm(fps)):
             data = read_mesh(fp)
             if self.pre_transform is not None:
@@ -101,17 +93,11 @@ class CoMA(InMemoryDataset):
             if self.split == 'interpolation':
                 if (idx % 100) < 10:
                     test_data_list.append(data)
-
-                    self.savepath(fp, trainSave=False)
-
                 else:
                     train_data_list.append(data)
-
-
             elif self.split == 'extrapolation':
                 if fp.split('/')[-2] == self.test_exp:
                     test_data_list.append(data)
-                    self.savepath(fp, trainSave=False)
                 else:
                     train_data_list.append(data)
             else:
