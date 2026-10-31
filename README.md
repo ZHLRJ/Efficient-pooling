@@ -25,13 +25,13 @@ Our method extends the quadric error metric by incorporating the areas of adjace
 
 For each vertex, the modified quadric error is defined as:
 
-\[
+$$
 Q_v(v) = \sum_{f \ni v} \operatorname{area}(f) Q_f^g(v) + \lambda_{vn} Q_f^{vn}(v)
-\]
+$$
 
 where the first term measures the area-weighted geometric error and the second term penalizes deviations in vertex normals.
 
-In our experiments, we use \(\lambda_{vn} = 0.005\).
+In our experiments, we use $\lambda_{vn} = 0.005$.
 
 This modification produces a more geometry-aware mesh hierarchy, particularly at lower resolutions where conventional quadric simplification may lose important shape features.
 
